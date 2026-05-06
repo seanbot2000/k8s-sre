@@ -1,0 +1,13 @@
+// Pod Failures and Crash Loops
+// Surfaces pods in CrashLoopBackOff, Error, or failed states with restart counts.
+
+KubePodInventory
+| where TimeGenerated > ago(1h)
+| where PodStatus in ("Failed", "Unknown") 
+    or ContainerStatusReason in ("CrashLoopBackOff", "Error", "OOMKilled", "ImagePullBackOff")
+| summarize
+    LastSeen = max(TimeGenerated),
+    RestartCount = max(PodRestartCount),
+    StatusReason = take_any(ContainerStatusReason)
+    by PodName = Name, Namespace, ClusterName, PodStatus
+| order by RestartCount desc, LastSeen desc

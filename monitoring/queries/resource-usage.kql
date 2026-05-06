@@ -1,0 +1,26 @@
+// CPU and Memory Usage Trends
+// Shows resource usage over time, aggregated by node, for capacity planning and anomaly detection.
+
+// --- Node-level CPU usage trend (5-minute bins) ---
+Perf
+| where TimeGenerated > ago(6h)
+| where ObjectName == "K8SNode"
+| where CounterName == "cpuUsageNanoCores"
+| summarize AvgCPU = avg(CounterValue), MaxCPU = max(CounterValue) by Node = Computer, bin(TimeGenerated, 5m)
+| order by TimeGenerated asc, Node asc
+
+// --- Node-level Memory usage trend (5-minute bins) ---
+// Perf
+// | where TimeGenerated > ago(6h)
+// | where ObjectName == "K8SNode"
+// | where CounterName == "memoryWorkingSetBytes"
+// | summarize AvgMemory = avg(CounterValue), MaxMemory = max(CounterValue) by Node = Computer, bin(TimeGenerated, 5m)
+// | order by TimeGenerated asc, Node asc
+
+// --- Container-level CPU usage (top consumers) ---
+// Perf
+// | where TimeGenerated > ago(1h)
+// | where ObjectName == "K8SContainer"
+// | where CounterName == "cpuUsageNanoCores"
+// | summarize AvgCPU = avg(CounterValue) by InstanceName, bin(TimeGenerated, 5m)
+// | top 20 by AvgCPU desc

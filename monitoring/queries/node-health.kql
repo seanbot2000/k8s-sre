@@ -1,0 +1,23 @@
+// Node Health Summary
+// Shows current status, CPU, memory, and conditions for all nodes.
+
+KubeNodeInventory
+| where TimeGenerated > ago(15m)
+| summarize arg_max(TimeGenerated, *) by Computer
+| project
+    Node = Computer,
+    Status,
+    KubeletVersion = KubeletVersion,
+    KubernetesVersion = KubernetesProviderID,
+    ClusterName,
+    LastHeartbeat = TimeGenerated
+| join kind=leftouter (
+    Perf
+    | where TimeGenerated > ago(15m)
+    | where ObjectName == "K8SNode"
+    | where CounterName in ("cpuUsageNanoCores", "memoryWorkingSetBytes")
+    | summarize Value = avg(CounterValue) by Computer, CounterName
+    | evaluate pivot(CounterName, take_any(Value), Computer)
+) on $left.Node == $right.Computer
+| project-away Computer
+| order by Status asc, Node asc

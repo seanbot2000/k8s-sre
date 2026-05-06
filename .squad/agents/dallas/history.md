@@ -52,3 +52,12 @@
 - **Orchlog generated:** `2026-05-06-180000Z-dallas.md` (background success documented)
 - **Pattern noted:** D1 vs D3 divergences (VM sizes, node counts) will need reconciliation post-fixes
 - **Next:** Team awaits Ripley's fixes; Dallas to re-review before prod deployment
+
+### 2026-05-06 — Final Review: All Blockers Approved
+- **Verdict:** APPROVE — all 3 critical blockers from D4 resolved cleanly
+- **Blocker 1 (CIDR overlap):** Service CIDR moved to 172.16.0.0/22, fully outside VNet 10.0.0.0/16. DNS IP correctly within range.
+- **Blocker 2 (User node pool):** Added with mode=User, 3× Standard_DS2_v2, no autoscaling. System pool tainted CriticalAddonsOnly.
+- **Blocker 3 (Alert deployment):** Wired into main.bicep with conditional toggle, correct resource ID passthrough, proper dependency chain.
+- **Quality observation:** Ripley's fixes are surgical — minimal changes, no regressions introduced. Parameters file and deploy.sh both consistent.
+- **Remaining backlog:** Tag naming convention mismatch (cosmetic), unused pod subnet (harmless), identity count gap (D1 specifies 3, only 1 exists)
+- **Decision written to:** `.squad/decisions/inbox/dallas-final-review.md`

@@ -67,3 +67,22 @@
 - **Decisions updated:** D6 (Dallas Review Blockers Resolved) and D7 (User Directive) added to decisions.md
 - **Orchestration log:** 20260506T182308Z-ripley.md created documenting blocker fix success
 - **Status:** All 3 critical blockers resolved; infra ready for re-review by Dallas
+
+### 2026-05-06 — AKS Infrastructure Deployed to Azure
+- **Deployment name:** `k8ssre-dev-deploy` (subscription-scope, eastus2)
+- **Fixes applied during deployment (3 iterations):**
+  1. **BCP120 scope errors:** `resourceGroup(rg.outputs.resourceGroupName)` is a runtime value; replaced with `resourceGroup(rgName)` using a deterministic variable `var rgName = '${namePrefix}-rg'`
+  2. **K8s version 1.30/1.32 LTS-only:** These versions require Premium tier + LTS support plan. Switched to `1.33` (GA, standard support).
+  3. **VM SKU `Standard_DS2_v2` unavailable:** Not allowed in this subscription/region. Changed to `Standard_D2s_v3` (equivalent performance, v3 family).
+  4. **Alert deployment errors:** Metric alerts failed validation on new cluster (no data yet) — added `skipMetricValidation: true`. KQL `log_s` field doesn't exist in AzureDiagnostics — replaced with `Message`.
+- **Resources deployed:**
+  - Resource Group: `k8ssre-dev-rg`
+  - AKS Cluster: `k8ssre-dev-aks` (FQDN: `k8ssre-dev-aks-dicym0er.hcp.eastus2.azmk8s.io`)
+  - VNet: `k8ssre-dev-vnet` (10.0.0.0/16)
+  - Log Analytics: `k8ssre-dev-law`
+  - Key Vault: `k8ssre-dev-kv` (URI: https://k8ssre-dev-kv.vault.azure.net/)
+  - Managed Identity: `k8ssre-dev-identity` (client ID: 68b4c063-1aab-4a8c-8c05-64df8b7a01e5)
+  - Action Group: `k8ssre-dev-sre-alerts-ag`
+  - Alert Rules: 5 (CPU, memory, pod restarts, node NotReady, autoscaler failures)
+  - OIDC Issuer: `https://eastus2.oic.prod-aks.azure.com/b19c3922-8151-4575-af3e-2e6373c43a4e/1f6a5a7c-ae1b-4f7f-87e7-cef773a0613c/`
+- **Pattern learned:** Always use `skipMetricValidation: true` for Container Insights metrics on new AKS clusters — data takes ~5 min to appear.

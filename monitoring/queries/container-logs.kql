@@ -1,0 +1,22 @@
+// Container Log Search Template
+// Adjust the filters below to search for specific containers, namespaces, or log patterns.
+
+let targetNamespace = "*";          // Set to a specific namespace or "*" for all
+let targetPod = "*";                // Set to a pod name prefix or "*" for all
+let searchTerm = "error";           // Log content to search for
+let lookback = ago(1h);             // Time range
+
+ContainerLogV2
+| where TimeGenerated > lookback
+| where (targetNamespace == "*" or PodNamespace == targetNamespace)
+| where (targetPod == "*" or PodName startswith targetPod)
+| where LogMessage has searchTerm
+| project
+    TimeGenerated,
+    PodNamespace,
+    PodName,
+    ContainerName,
+    LogSource,
+    LogMessage
+| order by TimeGenerated desc
+| take 200
