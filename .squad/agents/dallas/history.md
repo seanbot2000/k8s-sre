@@ -17,6 +17,22 @@
 - **User preference:** Seanbot200 requested architecture-only (no code from Dallas — delegates to Ripley/Parker)
 - **SRE Agent stance:** Alert-only in v1, no auto-remediation until trust is established
 
+### 2026-05-06 — Infrastructure Scaffold Review
+- **Review written to:** `.squad/decisions/inbox/dallas-infra-review.md`
+- **Verdict:** Conditional Approve — 3 critical issues block deployment
+- **Critical findings:**
+  - AKS serviceCidr (10.0.8.0/22) overlaps VNet address space (10.0.0.0/16) — will fail validation or cause routing issues
+  - No user node pool defined despite D1 requiring one — workloads would compete with system pods
+  - Alert rules (aks-alerts.bicep) exist but have no deployment path — never wired into main.bicep or scripts
+- **Quality observations:**
+  - Ripley's Bicep structure is clean and well-organized; module interfaces are consistent
+  - Parker's KQL queries correctly use ContainerLogV2 schema; alert coverage is solid
+  - Runbooks are the strongest deliverable — well-structured, actionable, cross-referenced
+  - Key Vault has contradictory config: RBAC enabled but access policies also defined (dead code)
+  - Identity module only creates one identity; D1 requires three with federated credentials
+  - Tag values don't fully align with D1 conventions (managedBy vs managed-by, iac vs bicep)
+- **Pattern noticed:** D1 vs D3 have minor spec divergences (VM sizes, min node counts) — need to reconcile decisions to avoid ambiguity for implementers
+
 ## Team Updates
 
 ### 2026-05-06 — Squad Decisions Merged
@@ -24,3 +40,15 @@
 - Parker aligned: SRE Agent read-only consumer; alert routing to Action Group
 - Ripley aligned: Bicep subscription-scoped approach; parameter passing strategy
 - Cross-team coordination: Architecture decisions formalized; team ready for implementation phase
+
+### 2026-05-06 — Review Finalized & Conditional Approve Recorded (Scribe Coordination)
+- **D4 Infrastructure Scaffold Review** finalized and merged into decisions.md
+- **Verdict documented:** Conditional Approve — 3 critical blockers identified
+- **Critical blockers assigned to Ripley (blocking deployment):**
+  1. Service CIDR overlap (aks.bicep line 43)
+  2. Missing user node pool (aks.bicep)
+  3. Alert deployment gap (monitoring/alerts — needs main.bicep wiring)
+- **Total findings:** 24 (3 critical, 6 moderate, 8 minor, 7 backlog)
+- **Orchlog generated:** `2026-05-06-180000Z-dallas.md` (background success documented)
+- **Pattern noted:** D1 vs D3 divergences (VM sizes, node counts) will need reconciliation post-fixes
+- **Next:** Team awaits Ripley's fixes; Dallas to re-review before prod deployment

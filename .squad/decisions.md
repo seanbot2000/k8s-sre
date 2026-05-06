@@ -90,6 +90,75 @@
 - **Naming:** `${namePrefix}-<suffix>` convention
 - **Rationale:** Bicep first-class Azure support; zero-dependency; subscription scope keeps stack declarative
 
+### D4: Infrastructure Scaffold Review — Dallas (Conditional Approve)
+
+**Author:** Dallas (Lead/Architect)  
+**Date:** 2026-05-06  
+**Status:** Conditional Approve  
+**Scope:** Full scaffold review — infra/, monitoring/, sre-agent/, runbooks/
+
+#### Verdict
+**CONDITIONAL APPROVE** — Three critical issues must be fixed before first deployment.
+
+#### Critical Blockers (Must Fix)
+
+1. **[#3] Service CIDR Overlap** (infra/modules/aks.bicep)  
+   Service CIDR `10.0.8.0/22` overlaps VNet `10.0.0.0/16`. Will fail validation or cause routing conflicts.  
+   **Fix:** Change to `172.16.0.0/22` with `dnsServiceIP: '172.16.0.10'`  
+   **Owner:** Ripley
+
+2. **[#4] Missing User Node Pool** (infra/modules/aks.bicep)  
+   D1 specifies user pool for workloads. System pool only violates AKS best practices.  
+   **Fix:** Add user node pool (`Standard_D4s_v5` or `Standard_DS2_v2`, 1–5 nodes, autoscaler)  
+   **Owner:** Ripley
+
+3. **[#17] Alert Deployment Gap** (monitoring/alerts/aks-alerts.bicep)  
+   Alert rules exist but are not deployed. No deployment path or Action Group.  
+   **Fix:** Wire into main.bicep or create separate deploy script with Action Group  
+   **Owner:** Parker/Ripley
+
+#### Key Findings Summary
+
+- **infra/main.bicep:** Good (tag value fix: `managed-by: iac` not `bicep`)
+- **infra/modules/aks.bicep:** CIDR overlap, missing user pool, VM size mismatch (D4s_v5 not in allowed list), system pool min count=1
+- **infra/modules/network.bicep:** Unused pod subnet, no NSG on AKS subnet
+- **infra/modules/log-analytics.bicep:** Missing archive-tier retention (30 interactive, 90 archive)
+- **infra/modules/identity.bicep:** Only one identity created (need 3 per D1); no federated credentials
+- **infra/modules/key-vault.bicep:** Dead access policy code (remove when RBAC enabled); network ACLs open to all
+- **monitoring/alerts:** Five good alerts; Sev 2 for node CPU/memory should be Sev 1; missing Action Group module
+- **monitoring/queries:** Solid; resource-usage.kql partially commented
+- **sre-agent/:** Config uses `kube-system` instead of dedicated `sre-agent` namespace
+- **runbooks/:** Excellent; no issues
+
+#### Next Steps
+All findings documented with severity levels and owner assignments.
+
+### D5: Alert Rules Wiring into Main Bicep Deployment
+
+**Author:** Ripley (Platform Dev)  
+**Date:** 2026-05-06  
+**Status:** Proposed  
+
+#### Context
+Parker created alert rule definitions in `monitoring/alerts/aks-alerts.bicep` covering 5 critical AKS health signals (node CPU, node memory, pod restarts, node NotReady, autoscaler failures). These needed to be wired into the main infrastructure deployment.
+
+#### Decision
+- Created `infra/modules/alerts.bicep` incorporating all 5 alert rules
+- Alert module creates inline Action Group (`${namePrefix}-sre-alerts-ag`) with email notification — keeps alerts self-contained
+- Metric alerts (CPU, memory) scoped to AKS cluster; log-based alerts scoped to Log Analytics workspace
+- Added `deployAlerts` boolean parameter (default: `true`) to main.bicep for environments where alerts aren't needed
+- Updated `deploy.sh` with `--no-alerts` flag
+
+#### Trade-offs
+- **Inline action group vs. shared:** Chose inline for simplicity. Can extract to shared module if needed later.
+- **Parameterized alert email** with default — can be overridden per environment
+
+#### Impact
+- Parker: Alert definitions deployed with infra. `monitoring/alerts/aks-alerts.bicep` remains source-of-truth reference; `infra/modules/alerts.bicep` is deployed version.
+- Team: `deploy.sh --no-alerts` available for dev/test scenarios
+
+**Files Modified:** `infra/modules/alerts.bicep`, `infra/main.bicep`, `infra/deploy.sh`
+
 ## Governance
 
 - All meaningful changes require team consensus

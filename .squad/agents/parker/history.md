@@ -23,3 +23,19 @@
 - Dallas coordinated: SRE Agent as read-only consumer of Log Analytics data; alert routing to Action Group
 - Ripley provided: Log Analytics workspace ID and OIDC issuer URL from Bicep scaffolding
 - Cross-team coordination: Observability decisions formalized; Parker ready for alert rule refinement
+
+### 2026-05-06 — Alert Integration & Design Decisions Finalized (Scribe Coordination)
+- **D5 Alert Wiring** finalized and merged into decisions.md
+- **Ripley completed:** Alert integration into main.bicep — `infra/modules/alerts.bicep` now wires all 5 Parker-designed alerts into deployment
+- **Decisions recorded:**
+  - Source-of-truth: `monitoring/alerts/aks-alerts.bicep` (Parker maintains alert definitions)
+  - Deployed version: `infra/modules/alerts.bicep` (Ripley maintains deployment copy)
+  - Inline Action Group (`${namePrefix}-sre-alerts-ag`) with parameterized email
+  - `deployAlerts` toggle in main.bicep; `--no-alerts` flag in deploy.sh
+- **D4 review identified moderate issues for Parker:**
+  - Node CPU/memory severity should be Sev 1 (not Sev 2) — fix in aks-alerts.bicep
+  - Add `project: 'k8s-sre'` tag to align with infra conventions
+  - Create Action Group Bicep module (currently no AMRM resource exists)
+  - Move SRE Agent to dedicated `sre-agent` namespace (currently kube-system)
+- **Orchlog generated:** Dallas's review findings documented
+- **Next:** Await Ripley's critical fixes; then address Parker's moderate items
