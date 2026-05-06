@@ -159,6 +159,43 @@ Parker created alert rule definitions in `monitoring/alerts/aks-alerts.bicep` co
 
 **Files Modified:** `infra/modules/alerts.bicep`, `infra/main.bicep`, `infra/deploy.sh`
 
+### D6: Dallas Review Blockers Resolved
+
+**Author:** Ripley (Platform Dev)  
+**Date:** 2026-05-06  
+**Status:** Accepted  
+**Resolves:** D4 blockers #3, #4, #17
+
+#### Changes Made
+
+1. **Service CIDR Overlap Fixed (D4 #3 — Critical)**
+   - Changed `serviceCidr` from `10.0.8.0/22` (overlapped VNet) to `172.16.0.0/22`
+   - Set `dnsServiceIP: '172.16.0.10'` 
+   - Non-overlapping RFC 1918 range safe for deployment
+
+2. **User Node Pool Added (D4 #4 — Critical)**
+   - Added `user` pool: Standard_DS2_v2, 3 nodes, User mode
+   - System pool: Standard_DS2_v2, 1 node, System mode with CriticalAddonsOnly taint
+   - No autoscaling per user directive (small 3-node config)
+
+3. **Alert Deployment Path (D4 #17)**
+   - Confirmed: `infra/modules/alerts.bicep` wired into main.bicep with `deployAlerts` toggle
+   - Action Group inline; no external dependency
+
+#### Files Modified
+- `infra/modules/aks.bicep`
+- `infra/modules/network.bicep`
+- `infra/main.bicep`
+- `infra/main.bicepparam`
+
+### D7: User Directive — Small 3-Node Cluster Config
+
+**Author:** Seanbot200 (via Copilot)  
+**Date:** 2026-05-06  
+**Status:** Active
+
+AKS cluster configured per user request: 1 system node + 3 user nodes, no autoscaling.
+
 ## Governance
 
 - All meaningful changes require team consensus
