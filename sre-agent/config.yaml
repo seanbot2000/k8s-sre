@@ -1,0 +1,76 @@
+# Azure SRE Agent Configuration Template
+# Owner: Parker (SRE)
+# Created: 2026-05-06
+#
+# Customize this file for your environment before applying.
+# See sre-agent/README.md for setup instructions.
+
+apiVersion: sre.azure.com/v1alpha1
+kind: SreAgentConfig
+metadata:
+  name: sre-agent-config
+  namespace: kube-system
+spec:
+  # Cluster identity
+  cluster:
+    resourceGroup: "k8ssre-dev-rg"
+    clusterName: "k8ssre-dev-aks"
+    subscriptionId: "3e3af423-cb5a-441f-a172-98b442a07d8b"
+
+  # Log Analytics integration
+  logAnalytics:
+    workspaceId: "97568188-11b7-4132-9f13-d854b122b7c3"
+    retentionDays: 30
+
+  # Investigation scope — which namespaces the agent monitors
+  investigationScope:
+    namespaces:
+      - default
+      - production
+      - staging
+    excludeNamespaces:
+      - kube-system
+      - kube-public
+
+  # Alert integration
+  alertIntegration:
+    enabled: true
+    actionGroupId: "/subscriptions/3E3AF423-CB5A-441F-A172-98B442A07D8B/resourceGroups/k8ssre-dev-rg/providers/microsoft.insights/actionGroups/k8ssre-dev-sre-alerts-ag"
+    severityFilter:
+      - 0  # Critical
+      - 1  # Error
+      - 2  # Warning
+
+  # Auto-remediation (disabled by default — enable after testing)
+  autoRemediation:
+    enabled: false
+    allowedActions:
+      - restartPod
+      - cordonNode
+    requireApproval: true
+
+  # Health checks
+  healthChecks:
+    nodeHealth:
+      enabled: true
+      intervalMinutes: 5
+    podHealth:
+      enabled: true
+      intervalMinutes: 2
+    clusterAutoscaler:
+      enabled: true
+      intervalMinutes: 10
+
+  # Notification channels
+  notifications:
+    slack:
+      enabled: false
+      webhookUrl: "${SLACK_WEBHOOK_URL}"
+      channel: "#sre-alerts"
+    teams:
+      enabled: true
+      channelUrl: "https://teams.microsoft.com/l/channel/19%3AdnWvnePX8v0uSxb5Czz4modRmQ7VjHTOMIDTqKJy42I1%40thread.tacv2/SRE?groupId=a44e183f-d8ee-41e4-8d88-2b747af591b8&tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47"
+    email:
+      enabled: false
+      recipients:
+        - sre-team@example.com
